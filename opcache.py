@@ -11,16 +11,20 @@ class OpCachePlugin(agent_util.Plugin):
 
     @classmethod
     def update_metrics(self, config):
+        # Make initial call to opcache.py using url set in config
         metric = {}
         r = urllib2.urlopen(config['opcache_url'])
         reply = r.read()
         reply = reply.strip().strip(';').split(';')
         for item in reply:
-            if 'hit_rate' in item or ('.php') in item: continue
+            if 'start_time' in item: continue
+            # So we can strip out the duplicate entries from the metadata like the duplicate free/used_memory stats
+            # did this because the first metric it returns is the actual correct one, the second is the default
+            elif item.split(':')[0] in  metric.keys(): continue
             else:
                 metric_name = item.split(':')[0]
                 metric_value = item.split(':')[-1]
-                metric["php_opcache." + metric_name] = float(metric_value)
+                metric[metric_name] = float(metric_value)
         return metric
 
     @classmethod
@@ -52,6 +56,11 @@ class OpCachePlugin(agent_util.Plugin):
     def check(self, textkey, data, config):
         tmp = self.update_metrics(config)
         if textkey in tmp:
-            return tmp[textkey]
+            # Adjusting for MB since it outputs in bytes
+            if 'memory' in textkey or 'buffer' in textkey:
+                return float(tmp[textkey]/1048576)
+            else:
+                return tmp[textkey]
         else:
             return None
+
