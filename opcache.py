@@ -17,7 +17,7 @@ class OpCachePlugin(agent_util.Plugin):
         reply = r.read()
         reply = reply.strip().strip(';').split(';')
         for item in reply:
-            if 'start_time' in item: continue
+            if 'time' in item: continue
             # So we can strip out the duplicate entries from the metadata like the duplicate free/used_memory stats
             # did this because the first metric it returns is the actual correct one, the second is the default
             elif item.split(':')[0] in  metric.keys(): continue
